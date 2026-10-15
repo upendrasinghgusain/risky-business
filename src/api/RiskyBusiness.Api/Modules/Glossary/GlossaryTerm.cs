@@ -30,8 +30,14 @@ public sealed class GlossaryTerm
     public static GlossaryTerm Create(string term, string definition, DateTimeOffset createdAt)
     {
         var trimmedTerm = term.Trim();
-        return new GlossaryTerm(Guid.CreateVersion7(createdAt), trimmedTerm, Normalize(trimmedTerm), definition.Trim(), createdAt);
+        var storedCreatedAt = TruncateToMicroseconds(createdAt);
+        return new GlossaryTerm(Guid.CreateVersion7(storedCreatedAt), trimmedTerm, Normalize(trimmedTerm), definition.Trim(), storedCreatedAt);
     }
+
+    // PostgreSQL timestamps hold microseconds; .NET holds 100ns ticks. Truncating up front means
+    // the value returned on create is the same as the value later read back.
+    private static DateTimeOffset TruncateToMicroseconds(DateTimeOffset value) =>
+        value.AddTicks(-(value.Ticks % TimeSpan.TicksPerMicrosecond));
 
     public static string Normalize(string term) => term.Trim().ToUpperInvariant();
 }
