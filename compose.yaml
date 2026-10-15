@@ -1,0 +1,34 @@
+name: riskybusiness
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: riskybusiness
+      POSTGRES_USER: riskybusiness
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (see .env.example)}
+    volumes:
+      - db-data:/var/lib/postgresql
+    ports:
+      # Bound to localhost only, so the API can also be run from the IDE against this database.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riskybusiness -d riskybusiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: src/api/RiskyBusiness.Api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=riskybusiness;Username=riskybusiness;Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "127.0.0.1:5080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

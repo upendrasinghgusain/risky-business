@@ -1,0 +1,17 @@
+@api = http://localhost:5145
+
+GET {{api}}/health/ready
+
+###
+
+GET {{api}}/api/glossary
+
+###
+
+POST {{api}}/api/glossary
+Content-Type: application/json
+
+{
+  "term": "Broker",
+  "definition": "An intermediary who arranges insurance on behalf of a client."
+}
