@@ -26,7 +26,12 @@ describe('GlossaryPage', () => {
     const fixture = await render();
 
     http.expectOne('/api/glossary').flush([
-      { id: '1', term: 'Coverholder', definition: 'Holds delegated authority.', createdAt: '2026-10-15T00:00:00Z' },
+      {
+        id: '1',
+        term: 'Coverholder',
+        definition: 'Holds delegated authority.',
+        createdAt: '2026-10-15T00:00:00Z',
+      },
     ]);
     await fixture.whenStable();
 
@@ -47,7 +52,10 @@ describe('GlossaryPage', () => {
     host.querySelector('form')!.dispatchEvent(new Event('submit'));
 
     const create = http.expectOne({ method: 'POST', url: '/api/glossary' });
-    expect(create.request.body).toEqual({ term: 'Coverholder', definition: 'Holds delegated authority.' });
+    expect(create.request.body).toEqual({
+      term: 'Coverholder',
+      definition: 'Holds delegated authority.',
+    });
     create.flush(null, { status: 409, statusText: 'Conflict' });
     await fixture.whenStable();
 
@@ -58,7 +66,9 @@ describe('GlossaryPage', () => {
     const fixture = await render();
     http.expectOne('/api/glossary').flush([]);
 
-    (fixture.nativeElement as HTMLElement).querySelector('form')!.dispatchEvent(new Event('submit'));
+    (fixture.nativeElement as HTMLElement)
+      .querySelector('form')!
+      .dispatchEvent(new Event('submit'));
 
     http.expectNone({ method: 'POST', url: '/api/glossary' });
   });

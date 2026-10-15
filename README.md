@@ -63,6 +63,14 @@ cd src/web; npm test -- --watch=false
 
 Integration tests start a disposable PostgreSQL container, so Docker must be running.
 
+## Continuous integration
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push to `main` and every pull request:
+
+- **API:** `dotnet format` check, build, unit and integration tests.
+- **Web:** Prettier check (`npm run format:check`; fix with `npm run format`), unit tests, production build.
+- **Images:** builds both Docker images for `linux/amd64` and `linux/arm64` (the Pi), without publishing.
+
 ## Database migrations
 
 ```powershell

@@ -44,7 +44,9 @@ export class GlossaryPage implements OnInit {
       error: (error: HttpErrorResponse) => {
         this.saving.set(false);
         this.saveError.set(
-          error.status === 409 ? 'That term is already in the glossary.' : 'Could not save the term.',
+          error.status === 409
+            ? 'That term is already in the glossary.'
+            : 'Could not save the term.',
         );
       },
     });

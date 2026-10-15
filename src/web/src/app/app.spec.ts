@@ -31,7 +31,9 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
 
-    http.expectOne('/health/ready').flush('Unhealthy', { status: 503, statusText: 'Service Unavailable' });
+    http
+      .expectOne('/health/ready')
+      .flush('Unhealthy', { status: 503, statusText: 'Service Unavailable' });
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('.status')?.textContent).toContain('unavailable');

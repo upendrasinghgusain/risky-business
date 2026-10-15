@@ -1,0 +1,5 @@
+# LF everywhere: the code runs in Linux containers and on the Pi, and Prettier expects LF.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
