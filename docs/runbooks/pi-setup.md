@@ -78,21 +78,38 @@ The runner should now show as **Idle** in the repository's runner settings.
 
 Because the repository is public, deploy jobs only run for pushes to `main` and manual runs, never for pull requests, and workflows from first-time contributors' pull requests wait for approval.
 
-## 6. Set up the Cloudflare Tunnel
+## 6. Route the hostnames through the Cloudflare Tunnel
 
-Requires the `upendragusain.co.uk` DNS to be managed by Cloudflare (free plan).
+The Pi runs a locally managed tunnel, `pi-tunnel`, as the `cloudflared` service, configured in `/etc/cloudflared/config.yml`. The same tunnel serves `upendragusain.co.uk` (nginx on port 80), so change it carefully.
 
-1. In the Cloudflare dashboard, go to **Zero Trust → Networks → Tunnels → Create a tunnel**, choose **Cloudflared**, and name it `pi`.
-2. Choose **Debian / arm64** and run the install command it shows on the Pi. This installs `cloudflared` as a service using the tunnel token.
-3. Add two **public hostnames** to the tunnel:
+1. Back up the config:
 
-   | Hostname | Service |
-   |---|---|
-   | `risky-business.upendragusain.co.uk` | `http://localhost:8180` |
-   | `risky-business-dev.upendragusain.co.uk` | `http://localhost:8181` |
+   ```bash
+   sudo cp -p /etc/cloudflared/config.yml /etc/cloudflared/config.yml.bak-$(date +%Y%m%d%H%M%S)
+   ```
 
-   Use `risky-business-dev`, not `dev.risky-business`: the free certificate covers only one level of subdomain.
-4. Recommended: keep dev private with **Zero Trust → Access → Applications**, adding a self-hosted application for `risky-business-dev.upendragusain.co.uk` that only allows your email address.
+2. Add these rules to `ingress`, **before** the final `http_status:404` catch-all:
+
+   ```yaml
+   - hostname: risky-business.upendragusain.co.uk
+     service: http://localhost:8180
+   - hostname: risky-business-dev.upendragusain.co.uk
+     service: http://localhost:8181
+   ```
+
+3. Validate, create the DNS records, restart, and check the existing site still works:
+
+   ```bash
+   cloudflared tunnel --config /etc/cloudflared/config.yml ingress validate
+   cloudflared tunnel route dns pi-tunnel risky-business.upendragusain.co.uk
+   cloudflared tunnel route dns pi-tunnel risky-business-dev.upendragusain.co.uk
+   sudo systemctl restart cloudflared
+   curl -s -o /dev/null -w "%{http_code}\n" https://upendragusain.co.uk/
+   ```
+
+Use `risky-business-dev`, not `dev.risky-business`: the free certificate covers only one level of subdomain.
+
+Recommended: keep dev private with **Zero Trust → Access → Applications** in the Cloudflare dashboard, adding a self-hosted application for `risky-business-dev.upendragusain.co.uk` that only allows your email address.
 
 ## 7. Turn on deployments
 
