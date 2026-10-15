@@ -1,0 +1,60 @@
+# The stack deployed to one environment (dev or prod) on the Pi. Managed by deploy/deploy.sh;
+# see docs/runbooks/operations.md. Images are pulled from GHCR, never built here.
+#
+# Per-environment values come from two files in /opt/riskybusiness/<env>/:
+#   .env          POSTGRES_PASSWORD, WEB_PORT (created once by hand, never committed)
+#   version.env   IMAGE_TAG (written by deploy.sh)
+
+x-logging: &logging
+  # Bounded logs, so containers cannot fill the SD card.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: riskybusiness
+      POSTGRES_USER: riskybusiness
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riskybusiness -d riskybusiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+  api:
+    image: ghcr.io/upendrasinghgusain/risky-business-api:${IMAGE_TAG:?Set IMAGE_TAG in version.env}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=riskybusiness;Username=riskybusiness;Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable
+      Database__MigrateOnStartup: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+
+  web:
+    image: ghcr.io/upendrasinghgusain/risky-business-web:${IMAGE_TAG:?Set IMAGE_TAG in version.env}
+    restart: unless-stopped
+    ports:
+      # Localhost only: the Cloudflare Tunnel connector on the Pi is the only way in.
+      - "127.0.0.1:${WEB_PORT:?Set WEB_PORT in .env}:8080"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging: *logging
+
+volumes:
+  db-data:

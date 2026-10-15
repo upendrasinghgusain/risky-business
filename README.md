@@ -71,6 +71,13 @@ Integration tests start a disposable PostgreSQL container, so Docker must be run
 - **Web:** Prettier check (`npm run format:check`; fix with `npm run format`), unit tests, production build.
 - **Images:** builds both Docker images for `linux/amd64` and `linux/arm64` (the Pi), without publishing.
 
+## Deployment
+
+The app runs on a Raspberry Pi as separate **dev** and **prod** Docker Compose stacks, reached over HTTPS through a Cloudflare Tunnel. Every push to `main` that passes CI publishes images to GHCR tagged with the commit SHA, deploys them to dev, and waits for approval before promoting the same images to prod.
+
+- One-off Pi setup: [docs/runbooks/pi-setup.md](docs/runbooks/pi-setup.md)
+- Deploy, roll back, back up and restore: [docs/runbooks/operations.md](docs/runbooks/operations.md)
+
 ## Database migrations
 
 ```powershell

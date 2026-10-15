@@ -8,10 +8,11 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same branch or PR supersedes the run in progress.
+# A newer push to a PR supersedes its run in progress. Runs on main are never cancelled,
+# so a deployment is never interrupted part-way.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   api:
@@ -83,3 +84,68 @@ jobs:
           push: false
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # Only after every check passes on main. Images are tagged with the commit SHA, and that same
+  # image is promoted from dev to prod.
+  publish:
+    name: Publish (${{ matrix.name }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [api, web, images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: api
+            context: src/api/RiskyBusiness.Api
+          - name: web
+            context: src/web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/risky-business-${{ matrix.name }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+
+  # Deployments need the self-hosted runner on the Pi. Set the repository variable
+  # DEPLOY_ENABLED to "true" once it is installed (docs/runbooks/pi-setup.md).
+  deploy-dev:
+    name: Deploy dev
+    if: vars.DEPLOY_ENABLED == 'true'
+    needs: publish
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev
+      version: ${{ github.sha }}
+
+  # Waits for approval in GitHub (the prod environment requires a reviewer).
+  deploy-prod:
+    name: Deploy prod
+    needs: deploy-dev
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
+      version: ${{ github.sha }}

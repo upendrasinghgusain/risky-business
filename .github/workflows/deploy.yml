@@ -1,0 +1,57 @@
+name: Deploy
+
+# Called by CI after images are published, or run by hand from the Actions tab to redeploy or
+# roll back: choose an environment and the commit SHA of any previously published version.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment
+        type: choice
+        options: [dev, prod]
+        required: true
+      version:
+        description: Full commit SHA of a published version
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    runs-on: [self-hosted, riskybusiness]
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'prod' && 'https://risky-business.upendragusain.co.uk' || 'https://risky-business-dev.upendragusain.co.uk' }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      # The deploy scripts and compose file come from the same commit as the images.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.version }}
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Inputs are passed as environment variables, never interpolated into the script.
+      - name: Deploy
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          VERSION: ${{ inputs.version }}
+        run: deploy/deploy.sh "$ENVIRONMENT" "$VERSION"
