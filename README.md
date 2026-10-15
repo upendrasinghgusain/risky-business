@@ -75,6 +75,7 @@ Integration tests start a disposable PostgreSQL container, so Docker must be run
 
 The app runs on a Raspberry Pi as separate **dev** and **prod** Docker Compose stacks, reached over HTTPS through a Cloudflare Tunnel. Every push to `main` that passes CI publishes images to GHCR tagged with the commit SHA, deploys them to dev, and waits for approval before promoting the same images to prod.
 
+- How it all fits together: [docs/delivery-pipeline.md](docs/delivery-pipeline.md)
 - One-off Pi setup: [docs/runbooks/pi-setup.md](docs/runbooks/pi-setup.md)
 - Deploy, roll back, back up and restore: [docs/runbooks/operations.md](docs/runbooks/operations.md)
 
