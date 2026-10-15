@@ -11,6 +11,7 @@ Stage 1 of the [spec](../spec.md) needs a minimal Angular / ASP.NET Core / relat
 
 - **Database: PostgreSQL.** SQL Server has no ARM64 Linux container image, so it cannot run on the Pi. PostgreSQL has official multi-arch images, is free and is well supported by EF Core (Npgsql).
 - **Backend: .NET 10 (LTS) ASP.NET Core with minimal APIs.** Endpoints are grouped per module with extension methods (e.g. `MapGlossaryEndpoints`).
+- **Frontend: Angular with its CLI defaults** (standalone components, signals, Vitest), kept deliberately simple. Node is pinned in `.node-version`; the Angular CLI is a project dependency rather than a global install. In containers it is served by an unprivileged nginx that proxies `/api` to the API, so the browser talks to one origin and no CORS configuration is needed.
 - **One API project to begin with.** Modules are folders under `Modules/`; shared persistence lives in `Infrastructure/`. Modules are split into separate projects only once a boundary has proven itself or needs compiler enforcement.
 - **Persistence: EF Core with migrations and snake_case naming,** so the schema reads naturally in PostgreSQL tools.
 - **Tests: xUnit, with integration tests against real PostgreSQL via Testcontainers** rather than an in-memory substitute.

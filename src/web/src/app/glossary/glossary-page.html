@@ -1,0 +1,37 @@
+<h2>Glossary</h2>
+
+<form [formGroup]="form" (ngSubmit)="add()">
+  <label>
+    Term
+    <input formControlName="term" maxlength="100" />
+  </label>
+  @if (form.controls.term.touched && form.controls.term.invalid) {
+    <p class="error">A term is required.</p>
+  }
+
+  <label>
+    Definition
+    <textarea formControlName="definition" rows="3" maxlength="2000"></textarea>
+  </label>
+  @if (form.controls.definition.touched && form.controls.definition.invalid) {
+    <p class="error">A definition is required.</p>
+  }
+
+  <button type="submit" [disabled]="saving()">Add term</button>
+  @if (saveError(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</form>
+
+@if (loadError(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+} @else {
+  <dl>
+    @for (item of terms(); track item.id) {
+      <dt>{{ item.term }}</dt>
+      <dd>{{ item.definition }}</dd>
+    } @empty {
+      <p>No terms yet.</p>
+    }
+  </dl>
+}

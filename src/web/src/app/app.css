@@ -1,0 +1,25 @@
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.status {
+  font-size: 0.9rem;
+}
+
+.status.healthy {
+  color: #1b7f3b;
+}
+
+.status.unavailable {
+  color: #b00020;
+}
